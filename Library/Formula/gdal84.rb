@@ -16,7 +16,7 @@ def no_python?
   ARGV.include? "--without-python"
 end
 
-class Gdal <Formula
+class Gdal84 <Formula
   url 'http://download.osgeo.org/gdal/gdal-1.7.3.tar.gz'
   head 'https://svn.osgeo.org/gdal/trunk/gdal', :using => :svn
   homepage 'http://www.gdal.org/'
