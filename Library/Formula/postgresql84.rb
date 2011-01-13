@@ -1,7 +1,7 @@
 require 'formula'
 require 'hardware'
 
-class Postgresql <Formula
+class Postgresql84 <Formula
   homepage 'http://www.postgresql.org/'
   url 'http://ftp2.uk.postgresql.org/sites/ftp.postgresql.org/source/v8.4.4/postgresql-8.4.4.tar.bz2'
   md5 '4bf2448ad965bca3940df648c02194df'
@@ -9,7 +9,7 @@ class Postgresql <Formula
   depends_on 'readline'
   depends_on 'libxml2' if MACOS_VERSION < 10.6 #system libxml is too old
 
-  aka 'postgres'
+  #aka 'postgres84' #this is deprecated 
 
   def options
     [
