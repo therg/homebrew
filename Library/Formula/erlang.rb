@@ -12,11 +12,11 @@ end
 
 class Erlang <Formula
   # Download from GitHub. Much faster than official tarball.
-  url "git://github.com/erlang/otp.git", :tag => "OTP_R14B01"
+  url "http://github.com/erlang/otp.git", :tag => "OTP_R14B01"
   version 'R14B01'
   homepage 'http://www.erlang.org'
 
-  head "git://github.com/erlang/otp.git", :branch => "dev"
+  head "http://github.com/erlang/otp.git", :branch => "dev"
 
   # We can't strip the beam executables or any plugins, there isn't really
   # anything else worth stripping and it takes a really, long time to run
