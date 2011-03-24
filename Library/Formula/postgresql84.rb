@@ -5,7 +5,7 @@ class Postgresql84 <Formula
   homepage 'http://www.postgresql.org/'
   url 'http://ftp9.us.postgresql.org/pub/mirrors/postgresql/source/v8.4.6/postgresql-8.4.6.tar.bz2'
   #url 'http://ftp2.uk.postgresql.org/sites/ftp.postgresql.org/source/v8.4.4/postgresql-8.4.4.tar.bz2'
-  md5 'ef53e5ef3aa4d485b20b651af97ff467'
+  md5 'fcc3daaf2292fa6bf1185ec45e512db6'
   #md5 '4bf2448ad965bca3940df648c02194df'
 
   depends_on 'readline'
