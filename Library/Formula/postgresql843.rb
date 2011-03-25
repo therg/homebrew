@@ -1,16 +1,15 @@
 require 'formula'
 require 'hardware'
 
-class Postgresql84 <Formula
+class Postgresql843 <Formula
   homepage 'http://www.postgresql.org/'
-  #url 'http://ftp2.uk.postgresql.org/sites/ftp.postgresql.org/source/v8.4.4/postgresql-8.4.4.tar.bz2'
-  url 'http://ftp2.ua.freebsd.org/pub/FreeBSD/distfiles/postgresql/postgresql-8.4.4.tar.bz2'
-  md5 '4bf2448ad965bca3940df648c02194df'
+  url 'http://ftp2.uk.postgresql.org/sites/ftp.postgresql.org/source/v8.4.3/postgresql-8.4.3.tar.bz2'
+  md5 '7f70e7b140fb190f268837255582b07e'
 
   depends_on 'readline'
   depends_on 'libxml2' if MACOS_VERSION < 10.6 #system libxml is too old
 
-  #aka 'postgres84' #this is deprecated 
+  #aka 'postgres'
 
   def options
     [
@@ -40,27 +39,11 @@ class Postgresql84 <Formula
     if bits_64? and not ARGV.include? '--no-python'
       configure_args << "ARCHFLAGS='-arch x86_64'"
 
-      # On 64-bit systems, we need to look for a 32-bit Framework Python.
-      # The configure script prefers this Python version, and if it doesn't
-      # have 64-bit support then linking will fail.
-
       framework_python = Pathname.new "/Library/Frameworks/Python.framework/Versions/Current/Python"
       if framework_python.exist? and not (archs_for_command framework_python).include? :x86_64
-        opoo "Detected a framework Python that does not have 64-bit support in:"
-        puts <<-EOS.undent
-            #{framework_python}
-
-          The configure script seems to prefer this version of Python over any others,
-          so you may experience linker problems as described in:
-            http://osdir.com/ml/pgsql-general/2009-09/msg00160.html
-
-          To fix this issue, you may need to either delete the version of Python
-          shown above, or move it out of the way before brewing PostgreSQL.
-
-          Note that a framework Python in /Library/Frameworks/Python.framework is
-          the "MacPython" verison, and not the system-provided version which is in:
-            /System/Library/Frameworks/Python.framework
-        EOS
+        opoo "Detected a framework Python that does not have 64-bit support."
+        puts "You may experience linker problems. See:"
+        puts "http://osdir.com/ml/pgsql-general/2009-09/msg00160.html"
       end
     end
 
@@ -85,12 +68,6 @@ class Postgresql84 <Formula
 
   def caveats
     caveats = <<-EOS
-To build plpython against a specific Python, set PYTHON prior to brewing:
-  PYTHON=/usr/local/bin/python  brew install postgresql
-See:
-  http://www.postgresql.org/docs/8.4/static/install-procedure.html
-
-
 If this is your first install, create a database with:
     initdb #{var}/postgres
 
