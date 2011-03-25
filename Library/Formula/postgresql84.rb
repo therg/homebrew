@@ -3,7 +3,6 @@ require 'hardware'
 
 class Postgresql84 <Formula
   homepage 'http://www.postgresql.org/'
-  #url 'http://ftp2.uk.postgresql.org/sites/ftp.postgresql.org/source/v8.4.4/postgresql-8.4.4.tar.bz2'
   url 'http://ftp2.ua.freebsd.org/pub/FreeBSD/distfiles/postgresql/postgresql-8.4.4.tar.bz2'
   md5 '4bf2448ad965bca3940df648c02194df'
 
