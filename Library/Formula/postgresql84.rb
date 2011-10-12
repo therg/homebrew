@@ -3,8 +3,8 @@ require 'hardware'
 
 class Postgresql84 <Formula
   homepage 'http://www.postgresql.org/'
-  url 'http://ftp2.ua.freebsd.org/pub/FreeBSD/distfiles/postgresql/postgresql-8.4.4.tar.bz2'
-  md5 '4bf2448ad965bca3940df648c02194df'
+  url 'http://ftp2.uk.postgresql.org/sites/ftp.postgresql.org/source/v8.4.9/postgresql-8.4.9.tar.bz2'
+  md5 'd50b1e2bd2b2284ffc3c7009e70b3d08'
 
   depends_on 'readline'
   depends_on 'libxml2' if MACOS_VERSION < 10.6 #system libxml is too old
