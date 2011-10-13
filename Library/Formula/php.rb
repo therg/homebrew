@@ -4,55 +4,67 @@ def mysql_installed?
   `which mysql_config`.length > 0
 end
 
-class Php <Formula
-  url 'http://www.php.net/get/php-5.3.8.tar.gz/from/this/mirror'
+def postgres_installed?
+  `which pg_config`.length > 0
+end
+
+class Php < Formula
+  url 'http://www.php.net/get/php-5.3.8.tar.bz2/from/this/mirror'
   homepage 'http://php.net/'
-  md5 'f4ce40d5d156ca66a996dbb8a0e7666a'
+  md5 '704cd414a0565d905e1074ffdc1fadfb'
   version '5.3.8'
 
   # So PHP extensions don't report missing symbols
   skip_clean ['bin', 'sbin']
 
-
+  depends_on 'gettext'
+  depends_on 'readline' unless ARGV.include? '--without-readline'
   depends_on 'libxml2'
   depends_on 'jpeg'
-  depends_on 'libpng'
   depends_on 'mcrypt'
-  depends_on 'gettext'
-  if ARGV.include? '--with-mysql'
+  depends_on 'gmp' if ARGV.include? '--with-gmp'
+
+  depends_on 'libevent' if ARGV.include? '--with-fpm'
+  depends_on 'freetds'if ARGV.include? '--with-mssql'
+  depends_on 'icu4c' if ARGV.include? '--with-intl'
+
+  if ARGV.include? '--with-mysql' and ARGV.include? '--with-mariadb'
+    raise "Cannot specify more than one MySQL variant to build against."
+  elsif ARGV.include? '--with-mysql'
     depends_on 'mysql' => :recommended unless mysql_installed?
+  elsif ARGV.include? '--with-mariadb'
+    depends_on 'mariadb' => :recommended unless mysql_installed?
   end
-  if ARGV.include? '--with-fpm'
-    depends_on 'libevent'
-  end
+
   if ARGV.include? '--with-pgsql'
-    depends_on 'postgresql'
+    depends_on 'postgresql' => :recommended unless postgres_installed?
   end
-  if ARGV.include? '--with-mssql'
-    depends_on 'freetds'
-  end
-  
+
   def options
    [
      ['--with-mysql', 'Include MySQL support'],
+     ['--with-mariadb', 'Include MariaDB support'],
      ['--with-pgsql', 'Include PostgreSQL support'],
      ['--with-mssql', 'Include MSSQL-DB support'],
-     ['--with-fpm', 'Enable building of the fpm SAPI executable'],
-     ['--with-apache', 'Build shared Apache 2.0 Handler module']
+     ['--with-fpm', 'Enable building of the fpm SAPI executable (implies --without-apache)'],
+     ['--without-apache', 'Build without shared Apache 2.0 Handler module'],
+     ['--with-intl', 'Include internationalization support'],
+     ['--without-readline', 'Build without readline support'],
+     ['--with-gmp', 'Include GMP support']
    ]
   end
 
-  def patches
-   DATA
-  end
-  
-  def configure_args
+  def patches; DATA; end
+
+  def install
     args = [
       "--prefix=#{prefix}",
       "--disable-debug",
-      "--disable-dependency-tracking",
-      "--with-config-file-path=#{prefix}/etc",
+      "--with-config-file-path=#{etc}",
+      "--with-config-file-scan-dir=#{etc}/php5/conf.d",
       "--with-iconv-dir=/usr",
+      "--enable-dba",
+      "--with-ndbm=/usr",
       "--enable-exif",
       "--enable-soap",
       "--enable-sqlite-utf8",
@@ -65,11 +77,11 @@ class Php <Formula
       "--enable-sysvsem",
       "--enable-sysvshm",
       "--enable-sysvmsg",
-      "--enable-memory-limit",
       "--enable-mbstring",
+      "--enable-mbregex",
+      "--enable-zend-multibyte",
       "--enable-bcmath",
       "--enable-calendar",
-      "--enable-memcache",
       "--with-openssl=/usr",
       "--with-zlib=/usr",
       "--with-bz2=/usr",
@@ -83,31 +95,28 @@ class Php <Formula
       "--with-curl=/usr",
       "--with-gd",
       "--enable-gd-native-ttf",
+      "--with-freetype-dir=/usr/X11",
       "--with-mcrypt=#{Formula.factory('mcrypt').prefix}",
       "--with-jpeg-dir=#{Formula.factory('jpeg').prefix}",
-      "--with-png-dir=#{Formula.factory('libpng').prefix}",
+      "--with-png-dir=/usr/X11",
       "--with-gettext=#{Formula.factory('gettext').prefix}",
+      "--with-snmp=/usr",
       "--with-tidy",
+      "--with-mhash",
       "--mandir=#{man}"
     ]
 
-    # Bail if both php-fpm and apxs are enabled
-    # http://bugs.php.net/bug.php?id=52419
-    if (ARGV.include? '--with-fpm') && (ARGV.include? '--with-apache')
-      onoe "You can only enable PHP FPM or Apache, not both"
-      puts "http://bugs.php.net/bug.php?id=52419"
-      exit 99
-    end
+    args.push "--with-gmp" if ARGV.include? '--with-gmp'
 
     # Enable PHP FPM
     if ARGV.include? '--with-fpm'
       args.push "--enable-fpm"
     end
 
-    # Build Apache module
-    if ARGV.include? '--with-apache'
+    # Build Apache module by default
+    unless ARGV.include? '--with-fpm' or ARGV.include? '--without-apache'
       args.push "--with-apxs2=/usr/sbin/apxs"
-      args.push "--libexecdir=#{prefix}/libexec"
+      args.push "--libexecdir=#{libexec}"
     end
 
     if ARGV.include? '--with-mysql'
@@ -126,39 +135,53 @@ class Php <Formula
       args.push "--with-mssql=#{Formula.factory('freetds').prefix}"
     end
 
-    return args
-  end
-  
-  def install
-    ENV.O3 # Speed things up
-    system "./configure", *configure_args
+    if ARGV.include? '--with-intl'
+      args.push "--enable-intl"
+      args.push "--with-icu-dir=#{Formula.factory('icu4c').prefix}"
+    end
 
-    if ARGV.include? '--with-apache'
+    args.push "--with-readline=#{Formula.factory('readline').prefix}" unless ARGV.include? '--without-readline'
+
+    system "./configure", *args
+
+    unless ARGV.include? '--without-apache'
       # Use Homebrew prefix for the Apache libexec folder
       inreplace "Makefile",
         "INSTALL_IT = $(mkinstalldirs) '$(INSTALL_ROOT)/usr/libexec/apache2' && $(mkinstalldirs) '$(INSTALL_ROOT)/private/etc/apache2' && /usr/sbin/apxs -S LIBEXECDIR='$(INSTALL_ROOT)/usr/libexec/apache2' -S SYSCONFDIR='$(INSTALL_ROOT)/private/etc/apache2' -i -a -n php5 libs/libphp5.so",
-        "INSTALL_IT = $(mkinstalldirs) '#{prefix}/libexec/apache2' && $(mkinstalldirs) '$(INSTALL_ROOT)/private/etc/apache2' && /usr/sbin/apxs -S LIBEXECDIR='#{prefix}/libexec/apache2' -S SYSCONFDIR='$(INSTALL_ROOT)/private/etc/apache2' -i -a -n php5 libs/libphp5.so"
+        "INSTALL_IT = $(mkinstalldirs) '#{libexec}/apache2' && $(mkinstalldirs) '$(INSTALL_ROOT)/private/etc/apache2' && /usr/sbin/apxs -S LIBEXECDIR='#{libexec}/apache2' -S SYSCONFDIR='$(INSTALL_ROOT)/private/etc/apache2' -i -a -n php5 libs/libphp5.so"
     end
-    
+
+    if ARGV.include? '--with-intl'
+      inreplace 'Makefile' do |s|
+        s.change_make_var! "EXTRA_LIBS", "\\1 -lstdc++"
+      end
+    end
+
     system "make"
+    ENV.deparallelize # parallel install fails on some systems
     system "make install"
 
-    system "cp ./php.ini-production #{prefix}/etc/php.ini"
+    etc.install "./php.ini-production" => "php.ini" unless File.exists? etc+"php.ini"
   end
 
  def caveats; <<-EOS
-   For 10.5 and Apache:
-    Apache needs to run in 32-bit mode. You can either force Apache to start 
+For 10.5 and Apache:
+    Apache needs to run in 32-bit mode. You can either force Apache to start
     in 32-bit mode or you can thin the Apache executable.
-   
-   To enable PHP in Apache add the following to httpd.conf and restart Apache:
-    LoadModule php5_module    #{prefix}/libexec/apache2/libphp5.so
 
-    The php.ini file can be found in:
-      #{prefix}/etc/php.ini
+To enable PHP in Apache add the following to httpd.conf and restart Apache:
+    LoadModule php5_module    #{libexec}/apache2/libphp5.so
+
+The php.ini file can be found in:
+    #{etc}/php.ini
+
+'Fix' the default PEAR permissions and config:
+    chmod -R ug+w #{lib}/php
+    pear config-set php_ini #{etc}/php.ini
    EOS
  end
 end
+
 
 __END__
 diff -Naur php-5.3.2/ext/tidy/tidy.c php/ext/tidy/tidy.c 
