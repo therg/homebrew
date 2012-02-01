@@ -2,14 +2,10 @@ require 'formula'
 
 class Cherokee < Formula
   homepage 'http://www.cherokee-project.com/'
-  url 'http://www.cherokee-project.com/download/1.2/1.2.99/cherokee-1.2.99.tar.gz'
-  md5 'c83115c3eebb29e6f2b4cc6fe699affe'
+  url 'http://www.cherokee-project.com/download/1.2/1.2.101/cherokee-1.2.101.tar.gz'
+  md5 'ef47003355a2e368e4d9596cd070ef23'
 
   depends_on 'gettext'
-
-  skip_clean "var/run"
-  skip_clean "var/log"
-  skip_clean "var/lib/cherokee/graphs/images"
 
   def caveats
     <<-EOS.undent
@@ -36,7 +32,8 @@ class Cherokee < Formula
                           "--sysconfdir=#{etc}",
                           "--localstatedir=#{var}/cherokee",
                           "--with-wwwuser=#{ENV['USER']}",
-                          "--with-wwwgroup=www"
+                          "--with-wwwgroup=www",
+                          "--enable-internal-pcre"
     system "make install"
 
     prefix.install "org.cherokee.webserver.plist"
