@@ -9,10 +9,10 @@ def postgres_installed?
 end
 
 class Php < Formula
-  url 'http://www.php.net/get/php-5.3.8.tar.bz2/from/this/mirror'
+  url 'http://www.php.net/get/php-5.3.9.tar.bz2/from/this/mirror'
   homepage 'http://php.net/'
-  md5 '704cd414a0565d905e1074ffdc1fadfb'
-  version '5.3.8'
+  md5 'dd3288ed5c08cd61ac5bf619cb357521'
+  version '5.3.9'
 
   # So PHP extensions don't report missing symbols
   skip_clean ['bin', 'sbin']
@@ -46,15 +46,21 @@ class Php < Formula
      ['--with-mariadb', 'Include MariaDB support'],
      ['--with-pgsql', 'Include PostgreSQL support'],
      ['--with-mssql', 'Include MSSQL-DB support'],
+     ['--with-cgi', 'Enable building of the CGI executable (implies --without-apache)'],
      ['--with-fpm', 'Enable building of the fpm SAPI executable (implies --without-apache)'],
      ['--without-apache', 'Build without shared Apache 2.0 Handler module'],
      ['--with-intl', 'Include internationalization support'],
      ['--without-readline', 'Build without readline support'],
-     ['--with-gmp', 'Include GMP support']
+     ['--with-gmp', 'Include GMP support'],
+     ['--with-suhosin', 'Include Suhosin patch']
    ]
   end
 
-  def patches; DATA; end
+  def patches
+    p = [DATA]
+    p << "http://download.suhosin.org/suhosin-patch-5.3.9-0.9.10.patch.gz" if ARGV.include? '--with-suhosin'
+    return p
+  end
 
   def install
     args = [
@@ -108,18 +114,21 @@ class Php < Formula
 
     args.push "--with-gmp" if ARGV.include? '--with-gmp'
 
-    # Enable PHP FPM
-    if ARGV.include? '--with-fpm'
+    if ARGV.include? '--with-fpm' and ARGV.include? '--with-cgi'
+      raise "Cannot specify more than one executable to build."
+    elsif ARGV.include? '--with-fpm'
       args.push "--enable-fpm"
+    elsif ARGV.include? '--with-cgi'
+      args.push "--enable-cgi"
     end
 
     # Build Apache module by default
-    unless ARGV.include? '--with-fpm' or ARGV.include? '--without-apache'
+    unless ARGV.include? '--with-fpm' or ARGV.include? '--with-cgi' or ARGV.include? '--without-apache'
       args.push "--with-apxs2=/usr/sbin/apxs"
       args.push "--libexecdir=#{libexec}"
     end
 
-    if ARGV.include? '--with-mysql'
+    if ARGV.include? '--with-mysql' or ARGV.include? '--with-mariadb'
       args.push "--with-mysql-sock=/tmp/mysql.sock"
       args.push "--with-mysqli=mysqlnd"
       args.push "--with-mysql=mysqlnd"
@@ -162,6 +171,8 @@ class Php < Formula
     system "make install"
 
     etc.install "./php.ini-production" => "php.ini" unless File.exists? etc+"php.ini"
+    chmod_R 0775, lib+"php"
+    system bin+"pear", "config-set", "php_ini", etc+"php.ini"
   end
 
  def caveats; <<-EOS
@@ -174,10 +185,6 @@ To enable PHP in Apache add the following to httpd.conf and restart Apache:
 
 The php.ini file can be found in:
     #{etc}/php.ini
-
-'Fix' the default PEAR permissions and config:
-    chmod -R ug+w #{lib}/php
-    pear config-set php_ini #{etc}/php.ini
    EOS
  end
 end
@@ -204,3 +211,14 @@ diff -Naur php-5.3.2/ext/tidy/tidy.c php/ext/tidy/tidy.c
  #include "buffio.h"
  
  /* compatibility with older versions of libtidy */
+
+--- a/ext/mssql/php_mssql.h	2010-12-31 21:19:59.000000000 -0500
++++ b/ext/mssql/php_mssql.h	2011-10-12 10:06:52.000000000 -0400
+@@ -65,7 +65,6 @@
+ #define dbfreelogin dbloginfree
+ #endif
+ #define dbrpcexec dbrpcsend
+-typedef unsigned char	*LPBYTE;
+ typedef float           DBFLT4;
+ #else
+ #define MSSQL_VERSION "7.0"
