@@ -1,14 +1,15 @@
 require 'formula'
 
 class Node < Formula
-  url 'http://nodejs.org/dist/v0.6.9/node-v0.6.9.tar.gz'
-  md5 'c2d2aee123a141ba8431855f1d9c8200'
   homepage 'http://nodejs.org/'
+  url 'http://nodejs.org/dist/v0.6.11/node-v0.6.11.tar.gz'
+  md5 '2f554353e831b8a22e6a85c676374374'
+
   head 'https://github.com/joyent/node.git'
 
   devel do
-    url 'http://nodejs.org/dist/v0.7.1/node-v0.7.1.tar.gz'
-    md5 '9a30d1273505627c649a2a29c5aaee6a'
+    url 'http://nodejs.org/dist/v0.7.4/node-v0.7.4.tar.gz'
+    md5 'dd225092411cc85615313d4058f765c9'
   end
 
   # Leopard OpenSSL is not new enough, so use our keg-only one
